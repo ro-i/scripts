@@ -1,4 +1,5 @@
 #!/bin/bash
+# See LICENSE file for copyright and license details.
 
 declare -A colors
 colors=(

@@ -1,4 +1,5 @@
 #!/bin/sh
+# See LICENSE file for copyright and license details.
 
 # Start Firefox with a temporary profile.
 #
