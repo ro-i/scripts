@@ -3,7 +3,7 @@
 
 declare -A colors
 colors=(
-	['default']='#bdbdbd'
+	['default']='#e2e2e2'
         ['blue']='#46aede'
         ['green']='#94e76b'
         ['red']='#eb4509'
@@ -48,15 +48,17 @@ regex_button='[^\\]"button":[[:space:]]*([[:digit:]]+)'
 exec_cmd () {
 	local cmd=$1
 	local args=$2
+	local background=$3
 
 	if ! type "$cmd" > /dev/null 2>&1; then
 		return
 	fi
 
-	eval "${cmd} ${args}"
-
-	# Detach the process (it may be a daemon process).
-	disown -a
+	if [[ -n $background ]] && $background; then
+		i3-msg -q exec "${cmd} ${args}"
+	else
+		eval "${cmd} ${args}"
+	fi
 }
 
 # Gets the name of a lineitem, its new value and optionally also its
@@ -68,7 +70,7 @@ to_json () {
 
 	[[ -z $color ]] && color=${colors['default']}
 
-	printf '{ "name": "%s", "full_text": "%s", "color": "%s", "separator_block_width": 19 }'\
+	printf '{ "name": "%s", "full_text": "%s", "color": "%s", "separator_block_width": 29 }'\
 		"$name" "$full_text" "$color"
 }
 
@@ -100,7 +102,6 @@ backlight_f () {
 }
 
 battery_f () {
-	local color
 	local suffix
 
 	local state=$(< '/sys/class/power_supply/BAT0/status')
@@ -111,31 +112,25 @@ battery_f () {
 	case $state in
 		'Full')
 			suffix='% (=)'
-			color=${colors['blue']}
 			;;
 		'Charging')
 			suffix='% (+)'
-			color=${colors['green']}
 			;;
 		'Discharging')
 			suffix='% (-)'
-			color=${colors['red']}
 			;;
 		'Unknown')
 			suffix='% (~)'
-			color=${colors['blue']}
 			;;
 		*)
 			suffix='% (err)'
-			color=${colors['red']}
 			;;
 	esac
 
-	to_json 'battery_f' "${cap}${suffix}" "$color"
+	to_json 'battery_f' "${cap}${suffix}"
 }
 
 ethernet_f () {
-	local color
 	local result
 	local interface='eno2'
 
@@ -145,21 +140,18 @@ ethernet_f () {
 	case $state in
 		'down')
 			result='E'
-			color=${colors['red']}
 			;;
 		'up')
 			speed=$(< "/sys/class/net/${interface}/speed")
 			[[ -z $speed ]] && return
 			result="E (${speed} MBit/s)"
-			color=${colors['green']}
 			;;
 		*)
 			result='error'
-			color=${colors['red']}
 			;;
 	esac
 
-	to_json 'ethernet_f' "$result" "$color"
+	to_json 'ethernet_f' "$result"
 }
 
 time_f () {
@@ -167,7 +159,7 @@ time_f () {
 
 	case $button in
 		3)
-			exec_cmd 'gnome-terminal' '-- bash -c "cal -wy | less" &'
+			exec_cmd 'gnome-terminal' '-- bash -c "cal -wy | less"' true
 			;;
 		*)
 			to_json 'time_f' "$(date +'%H:%M - %d.%m')"
@@ -178,35 +170,36 @@ time_f () {
 volume_intern () {
 	local button=$1
 	local caller=$2
-	local device=$3
+	local device_alsa=$3
 	local device_character=$4
+	local device_character_muted=$5
 	local output
 	local result
 
 	case $button in
 		2)
 			# middle click to open pavucontrol
-			exec_cmd 'pavucontrol' '&'
+			exec_cmd 'pavucontrol' '' true
 			return
 			;;
 		3)
 			# right klick to toggle mute/unmute
-			output=$(exec_cmd 'amixer' "set ${device} toggle")
+			output=$(exec_cmd 'amixer' "-D pulse set ${device_alsa} toggle")
 			;;
 		4)
 			# scroll up, increase
-			output=$(exec_cmd 'amixer' "set ${device} '2%+'")
+			output=$(exec_cmd 'amixer' "-D pulse set ${device_alsa} '2%+'")
 			;;
 		5)
 			# scroll down, decrease
-			output=$(exec_cmd 'amixer' "set ${device} '2%-'")
+			output=$(exec_cmd 'amixer' "-D pulse set ${device_alsa} '2%-'")
 			;;
 		*)
-			output=$(exec_cmd 'amixer' "get ${device}")
+			output=$(exec_cmd 'amixer' "-D pulse get ${device_alsa}")
 			;;
 	esac
 
-	[[ -z $output ]] && return
+	[[ -z $output ]] && { err; return; }
 
 	local vol=$(get_regex_match "$output" '([[:digit:]]+%)')
 	local state=$(get_regex_match "$output" '(\[on\]|\[off\])')
@@ -215,7 +208,7 @@ volume_intern () {
 
 	case $state in
 		'[off]')
-			result="${device_character} ${vol} (-)"
+			result="${device_character_muted}"
 			;;
 		*)
 			result="${device_character} ${vol}"
@@ -228,13 +221,13 @@ volume_intern () {
 volume_f () {
 	local button=$1
 
-	volume_intern "$button" 'volume_f' 'Master' '♪'
+	volume_intern "$button" 'volume_f' 'Master' '♪' ''
 }
 
 volume_mic_f () {
 	local button=$1
 
-	volume_intern "$button" 'volume_mic_f' 'Capture' '#'
+	volume_intern "$button" 'volume_mic_f' 'Capture' '' ''
 }
 
 wifi_f () {
@@ -246,7 +239,7 @@ wifi_f () {
 	[[ -z $operstate ]] && return
 
 	if [[ $operstate == 'down' ]]; then
-		to_json 'wifi_f' 'W down' "${colors['red']}"
+		to_json 'wifi_f' 'W down'
 	fi
 
 	local wireless=$(< '/proc/net/wireless')
@@ -265,7 +258,7 @@ wifi_f () {
 		result="${wifi}%"
 	fi
 
-	to_json 'wifi_f' "$result" "${colors['green']}"
+	to_json 'wifi_f' "$result"
 }
 
 err () {
