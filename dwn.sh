@@ -9,11 +9,11 @@ params='--no-playlist'
 
 
 print_ok () {
-	printf '%b\n' '[\e[01;32mOK\e[m]'
+	printf '%b\n' '[\001\e[01;32m\002OK\001\e[m\002]'
 }
 
 print_fail () {
-	printf '%b\n' '[\e[01;31mFAILED\e[m]'
+	printf '%b\n' '[\001\e[01;31m\002FAILED\001\e[m\002]'
 }
 
 read_prompt_to_var () {
@@ -35,11 +35,11 @@ if [[ -n $1 ]]; then
 	esac
 fi
 
-read_prompt_to_var $'\e[01;34mURL to Audio/Video: \e[m' 'url'
+read_prompt_to_var $'\001\e[01;34m\002URL to Audio/Video: \001\e[m\002' 'url'
 
 printf '\n%s\n\n' 'There are multiple options for the download:'
 
-PS3=$'\n\e[01;34mSelect option (enter the number): \e[m'
+PS3=$'\n\001\e[01;34m\002Select option (enter the number): \001\e[m\002'
 options=(
 	'Audio+Video, best quality available'
 	'Audio+Video, format mp4'
@@ -87,7 +87,7 @@ else
 	output=$("$ydlbin" $params "$url" 2>&1)
 fi
 
-if [[ $output =~ ERROR ]]; then
+if [[ -z $output || $output =~ ERROR ]]; then
 	print_fail
 	exit 1
 fi
@@ -101,7 +101,7 @@ if [[ -z $ofile ]]; then
 fi
 
 while true; do
-	read_prompt_to_var $'\e[01;34mEnter the desired file name: \e[m' 'nfile'
+	read_prompt_to_var $'\001\e[01;34m\002Enter the desired file name: \001\e[m\002' 'nfile'
 
 	if [[ $nfile =~ / ]]; then
 		echo 'The file name must not contain a slash "/".'
