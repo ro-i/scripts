@@ -17,7 +17,7 @@ ff="firefox"
 firejail --profile="$ff" -- sh -c '
 set -eu
 
-PROFILEDIR=$(mktemp -d /tmp/tmp-ff-profile.XXXXXXXXXX.d)
-'"$ff"' --profile "$PROFILEDIR" --no-remote
-rm -rf "$PROFILEDIR"
+profiledir=$(mktemp -d /tmp/tmp-ff-profile.XXXXXXXXXX.d)
+'"$ff"' --profile "$profiledir" --no-remote
+rm -rf "$profiledir"
 '
