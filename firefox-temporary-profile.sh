@@ -5,7 +5,7 @@
 #
 # cf. https://qasimk.io/2019/temporary-firefox-profile/
 # or https://cat-in-136.github.io/2012/12/tip-how-to-run-new-firefox-instance-w.html
-# 
+#
 # Temporary profile should be in memory, so put it into /tmp.
 # As "firejail firefox --profile [...]" would build a new /tmp without our
 # newly generated profile directory, start an appropriately confined shell
