@@ -64,6 +64,11 @@ my $separator = " - ";
 my $file_artist_first = 0;
 # Determines the display order of <artist> and <title>.
 my $display_artist_first = 0;
+# Sort order. Use file modification time by default.
+# If disabled, sort according last file access time.
+# Can be switched during runtime by "selecting" the (non-existant) value
+# "//" in dmenu.
+my $sort_mtime = 1;
 
 # We define our exceptions!
 # The keys in the following hash are regular expressions for the filenames you
@@ -135,25 +140,24 @@ sub get_filename {
 
 sub get_files {
 	my @paths_l = @{$_[0]};
-	my @files;
+	my $files = $_[1];
 
 	for my $dir (@paths_l) {
 		opendir(my $dh, $dir) or die $!;
 		while (readdir($dh)) {
 			next if ($_ =~ m/^\.\.?/);
 			if (-d "$dir/$_") {
-				push(@files, ["$dir/$_", preprocess_dirname($_)]);
+				push(@{$files}, ["$dir/$_", preprocess_dirname($_)]);
 			} else {
-				push(@files, ["$dir/$_", preprocess_filename($_)]);
+				push(@{$files}, ["$dir/$_", preprocess_filename($_)]);
 			}
 		}
 		closedir($dh);
 	}
 
-	# Sort using mtime.
-	@files = sort { (stat $b->[0])[9] cmp (stat $a->[0])[9] } @files;
-
-	return \@files;
+	# Sort using mtime if $sort_mtime, otherwise use atime.
+	my $stat_index = $sort_mtime ? 9 : 8;
+	@{$files} = sort { (stat $b->[0])[$stat_index] cmp (stat $a->[0])[$stat_index] } @{$files};
 }
 
 # Get the maximum title length.
@@ -165,7 +169,7 @@ sub get_maxlen_left_column {
 	my $len = max(map(length((split_title_artist($_->[1]))[$index]), @files));
 
 	# Add some extra spaces between the columns.
-	return $len + 8;
+	return (defined($len) ? $len : 0) + 8;
 }
 
 sub play_album {
@@ -264,12 +268,18 @@ sub trim {
 
 
 while (1) {
-	my $files = get_files(\@paths);
-	format_display_names($files);
+	my @files = ();
 
-	my $selection = dmenu(map($_->[1], @{$files}));
-	my $file = get_filename($files, $selection);
+	get_files(\@paths, \@files);
+	format_display_names(\@files);
 
+	my $selection = dmenu(map($_->[1], @files));
+	if ($selection eq '//') {
+		$sort_mtime = ! $sort_mtime;
+		next;
+	}
+
+	my $file = get_filename(\@files, $selection);
 	exit 0 if ($file eq '');
 
 	if (-d $file) {
