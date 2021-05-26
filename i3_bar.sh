@@ -164,14 +164,14 @@ start_input_listener () {
 		exec 0>>/proc/self/fd/4
 		fd=4
 	fi
-	(input_redirector < /proc/$$/fd/$fd &)
+	(input_redirector < /proc/$$/fd/$fd) &
 }
 
 # Start all monitors in background and establish the input pipe
 # collecting their ouput.
 start_monitors () {
 	for monitor in "${monitors[@]}"; do
-		({ "$monitor" | input_redirector; } &)
+		({ "$monitor" | input_redirector; }) &
 	done
 }
 
@@ -389,9 +389,9 @@ wifi_f () {
 # changes (on all cards).
 volume_monitor () {
 	while read -r line; do
-		if [[ "$line" == *' Capture '* ]]; then
+		if [[ "$line" == *'Capture'* ]]; then
 			name='volume_mic_f'
-		elif [[ "$line" == *' Playback '* ]]; then
+		elif [[ "$line" == *'Master Playback'* ]]; then
 			name='volume_f'
 		else
 			continue
