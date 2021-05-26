@@ -12,8 +12,7 @@ Start Firefox with a temporary profile (confined to
 
 `i3_bar.sh`
 -----------
-A small bash script to populate [i3bar](https://github.com/i3/i3) with useful
-data.
+A bash script to populate [i3bar](https://github.com/i3/i3) with useful data.
 
 `music_dmenu.pl`
 ----------------
