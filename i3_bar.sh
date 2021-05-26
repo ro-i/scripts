@@ -7,10 +7,10 @@ terminal_app='gnome-terminal'
 declare -A colors
 colors=(
 	['default']='#e2e2e2'
-        ['blue']='#46aede'
-        ['green']='#94e76b'
-        ['red']='#eb4509'
-        ['yellow']='#ffac18'
+	['blue']='#46aede'
+	['green']='#94e76b'
+	['red']='#eb4509'
+	['yellow']='#ffac18'
 )
 
 # Which lineitems shall be displayed, in which order, and which
