@@ -7,6 +7,7 @@ use warnings;
 use Encode::Locale;
 use IPC::Open2;
 use List::Util qw(max);
+use Text::CharWidth qw(mbswidth);
 
 
 ###################
@@ -111,17 +112,17 @@ sub format_display_names {
 	my @files = @{$_[0]};
 
 	# Get the maximum length of the left display column.
-	my $maxlen = get_maxlen_left_column(\@files);
+	my $maxlen = get_max_display_len_left_column(\@files);
 
 	for (@files) {
 		my ($file, $display_name) = @{$_};
 		my ($artist, $title) = split_title_artist($display_name);
 
 		if ($display_artist_first) {
-			my $len = $maxlen - length($artist);
+			my $len = $maxlen - mbswidth($artist);
 			$display_name = $artist . " " x $len . $title;
 		} else {
-			my $len = $maxlen - length($title);
+			my $len = $maxlen - mbswidth($title);
 			$display_name = $title . " " x $len . $artist;
 		}
 
@@ -161,12 +162,12 @@ sub get_files {
 }
 
 # Get the maximum title length.
-sub get_maxlen_left_column {
+sub get_max_display_len_left_column {
 	my @files = @{$_[0]};
 
 	my $index = $display_artist_first ? 0 : 1;
 
-	my $len = max(map(length((split_title_artist($_->[1]))[$index]), @files));
+	my $len = max(map(mbswidth((split_title_artist($_->[1]))[$index]), @files));
 
 	# Add some extra spaces between the columns.
 	return (defined($len) ? $len : 0) + 8;
@@ -256,7 +257,7 @@ sub split_title_artist {
 	}
 
 	my $first = trim(substr($_[0], 0, $i));
-	my $second = trim(substr($_[0], $i + length($separator)));
+	my $second = trim(substr($_[0], $i + mbswidth($separator)));
 
 	return $file_artist_first ? ($first, $second) : ($second, $first);
 }
