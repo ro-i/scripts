@@ -7,6 +7,7 @@ use warnings;
 use Encode::Locale;
 use IPC::Open2;
 use List::Util qw(max);
+use Sort::Naturally qw(nsort);
 use Text::CharWidth qw(mbswidth);
 
 
@@ -69,6 +70,8 @@ my $display_artist_first = 0;
 # If disabled, sort according last file access time.
 # Can be switched during runtime by "selecting" the (non-existant) value
 # "//" in dmenu.
+# Note that albums are always played according to natural sorting of the
+# file names.
 my $sort_mtime = 1;
 
 # We define our exceptions!
@@ -184,7 +187,8 @@ sub play_album {
 	}
 	closedir($dh);
 
-	for (@album) {
+	# Sort the filenames using natural sort.
+	for (nsort @album) {
 		play_file($_, 1);
 	}
 
