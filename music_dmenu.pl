@@ -7,7 +7,7 @@ use warnings;
 use Encode::Locale;
 use IPC::Open2;
 use List::Util qw(max);
-use Sort::Naturally qw(nsort);
+use Sort::Naturally qw(ncmp nsort);
 use Text::CharWidth qw(mbswidth);
 
 
@@ -24,11 +24,12 @@ my @paths = (
 );
 
 # Specify (sub-)directories which you want to be considered as albums.
-# If you select an album, all its files will be played consecutively
-# in random order.
+# If you select a file in an album, it will played together with all
+# of the following files consecutively. (In an album, all files are
+# sorted in natural sort order.)
 # (regex values)
 my @albums = (
-	$home_q . '\/Music\/example_album\/?',
+	$home_q . '\/Music\/example_album\/',
 );
 
 # dmenu command
@@ -77,6 +78,7 @@ my $sort_mtime = 1;
 # We define our exceptions!
 # The keys in the following hash are regular expressions for the filenames you
 # want to play with a special command - this command (an array) is the value.
+# Note that this is discarded when playing multiple files in an album.
 my %exceptions = (
 	$home_q . '\/Music\/Song Title - Artist Name\.mp3' => 
 	[ $player, @args, "--audio-channels=mono" ],
@@ -159,9 +161,14 @@ sub get_files {
 		closedir($dh);
 	}
 
-	# Sort using mtime if $sort_mtime, otherwise use atime.
-	my $stat_index = $sort_mtime ? 9 : 8;
-	@{$files} = sort { (stat $b->[0])[$stat_index] cmp (stat $a->[0])[$stat_index] } @{$files};
+	if (paths_is_album(\@paths_l)) {
+		# Natural sort.
+		@{$files} = sort { ncmp($a->[0], $b->[0]) } @{$files};
+	} else {
+		# Sort using mtime if $sort_mtime, otherwise use atime.
+		my $stat_index = $sort_mtime ? 9 : 8;
+		@{$files} = sort { (stat $b->[0])[$stat_index] cmp (stat $a->[0])[$stat_index] } @{$files};
+	}
 }
 
 # Get the maximum title length.
@@ -176,53 +183,66 @@ sub get_max_display_len_left_column {
 	return (defined($len) ? $len : 0) + 8;
 }
 
+# Take the current path list and check whether we are operating in an
+# album at the moment. (Consider subdirectories!)
+sub paths_is_album {
+	my @paths_l = @{$_[0]};
+	my $path = $paths_l[0] . "/";
+	return (length(@paths_l == 1) and (grep { $path =~ m/^${_}/ } @albums));
+}
+
+# Play the given file and all following files in this album.
 sub play_album {
-	my $dir = $_[0];
+	my ($file, $dir) = @_;
+	my $skip = 1;
 	my @album;
+	my @to_play;
 
 	opendir(my $dh, $dir) or die $!;
 	while (readdir($dh)) {
 		next if (! -f "$dir/$_");
-		push @album, "$dir/$_";
+		push(@album, "$dir/$_");
 	}
 	closedir($dh);
 
 	# Sort the filenames using natural sort.
-	for (nsort @album) {
-		play_file($_, 1);
+	for (nsort(@album)) {
+		if ($skip and $_ eq $file) {
+			$skip = 0;
+		}
+		next if ($skip);
+		push(@to_play, $_);
 	}
+
+	play_files(@to_play);
 
 	exit 0;
 }
 
-sub play_file {
-	my ($file, $wait) = @_;
+sub play_files {
+	my @files = @_;
+	my $len = $#files + 1;
 
-	my @cmd = $wait ? ($player_album, @args_album) : ($player, @args);
+	return if (! $len);
 
-	my @cmd_es = grep { $file =~ m/^${_}$/ } keys(%exceptions);
-	if (@cmd_es) {
-		# Use the last rule if there are more than one.
-		@cmd = @{$exceptions{$cmd_es[-1]}};
+	my @cmd = $len > 1 ? ($player_album, @args_album) : ($player, @args);
+
+	if ($len == 1) {
+		my @cmd_es = grep { $files[0] =~ m/^${_}$/ } keys(%exceptions);
+		if (@cmd_es) {
+			# Use the last rule if there are more than one.
+			@cmd = @{$exceptions{$cmd_es[-1]}};
+		}
 	}
 
 	# Indicate end of options and append filename.
-	push(@cmd, "--", $file);
+	push(@cmd, "--", @files);
 
 	my $pid = fork();
 	die $! if (! defined($pid));
 	if ($pid == 0) {
 		# child
 		exec { $cmd[0] } @cmd or die $!;
-	}
-
-	# parent
-	if (!$wait) {
-		exit 0;
-	}
-
-	while (wait() != -1) {
-		exit if ($?);
 	}
 }
 
@@ -276,7 +296,9 @@ while (1) {
 	my @files = ();
 
 	get_files(\@paths, \@files);
-	format_display_names(\@files);
+	if (! paths_is_album(\@paths)) {
+		format_display_names(\@files);
+	}
 
 	my $selection = dmenu(map($_->[1], @files));
 	if ($selection eq '//') {
@@ -288,12 +310,11 @@ while (1) {
 	exit 0 if ($file eq '');
 
 	if (-d $file) {
-		if (grep { $file =~ m/^${_}$/ } @albums) {
-			play_album($file);
-		} else {
-			@paths = ($file);
-		}
+		@paths = ($file);
+	} elsif (paths_is_album(\@paths)) {
+		play_album($file, $paths[0]);
 	} else {
-		play_file($file);
+		play_files(($file));
+		exit 0;
 	}
 }
