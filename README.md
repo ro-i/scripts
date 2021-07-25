@@ -19,7 +19,16 @@ A bash script to populate [i3bar](https://github.com/i3/i3) with useful data.
 Perl script for mpv / other media players. Lists the content of a media
 collection using dmenu and plays the selected files / albums.
 
+`settings.sh`
+-------------
+Shell script to switch monitor outputs.
+
 `top.awk`
 ---------
 Analyze the output of top -b -c (ran for some time and redirected to a file).
 (Uses `gawk`.)
+
+`user.js`
+---------
+Minimal `user.js` for Mozilla Firefox based on
+[arkenfox/user.js](https://github.com/arkenfox/user.js).
