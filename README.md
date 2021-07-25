@@ -19,6 +19,10 @@ A bash script to populate [i3bar](https://github.com/i3/i3) with useful data.
 Perl script for mpv / other media players. Lists the content of a media
 collection using dmenu and plays the selected files / albums.
 
+`notes.sh`
+----------
+Shell script to manage some plain text notes.
+
 `settings.sh`
 -------------
 Shell script to switch monitor outputs.
