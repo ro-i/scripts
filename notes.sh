@@ -22,7 +22,7 @@ dmenu_cmd () {
 }
 
 editor () {
-	gnome-terminal -- nvim "$@"
+	gnome-terminal -- nvim -c 'set ft=markdown' "$@"
 }
 
 get_dirs () {
