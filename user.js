@@ -156,6 +156,7 @@ user_pref("browser.bookmarks.max_backups", 2);
  * settings not in user.js template
  */
 user_pref("browser.ctrlTab.recentlyUsedOrder", false);
+user_pref("browser.tabs.warnOnClose", true);
 //user_pref("gfx.webrender.all", true); // Experimental!
 
 
