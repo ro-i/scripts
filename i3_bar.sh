@@ -17,10 +17,9 @@ colors=(
 # function is responsible for them?
 line_items=(
 	'time_f'
-	'wifi_f'
 	'volume_f'
 	'volume_mic_f'
-	'ethernet_f'
+	'net_f'
 	'backlight_f'
 	'battery_f'
 )
@@ -30,12 +29,20 @@ monitors=(
 	'volume_monitor'
 )
 
+# List of network interfaces to monitor.
+# Also define a symbol to display for each interface.
+declare -A net_interfaces
+net_interfaces=(
+	['wlo1']='wlo1'
+	['eno2']='eno2'
+)
+
 # Which lineitems shall be updated every 10 seconds?
 # (The others are updated only on a click event.)
 update_items=(
-	'time_f'
-	'wifi_f'
 	'battery_f'
+	'net_f'
+	'time_f'
 )
 
 # The output line items (json objects).
@@ -151,6 +158,10 @@ print_line () {
 	printf '[%s],\n' "$result"
 }
 
+slurp_file () {
+	{ printf '%s' "$(< "$1")"; } 2>/dev/null
+}
+
 # A separate reader for stdin.
 # Avoids race conditions by using locking on the actual input pipe
 # which is also used by the monitors.
@@ -197,7 +208,7 @@ backlight_f () {
 	local button=$1
 	local brightness percentage
 
-	brightness=$(< '/sys/class/backlight/intel_backlight/brightness')
+	brightness=$(slurp_file '/sys/class/backlight/intel_backlight/brightness')
 	[[ -z $brightness ]] && return
 
 	# Note: the brightness values here are very individual!
@@ -224,8 +235,8 @@ backlight_f () {
 battery_f () {
 	local cap state suffix
 
-	state=$(< '/sys/class/power_supply/BAT0/status')
-	cap=$(< '/sys/class/power_supply/BAT0/capacity')
+	state=$(slurp_file '/sys/class/power_supply/BAT0/status')
+	cap=$(slurp_file '/sys/class/power_supply/BAT0/capacity')
 
 	[[ -z $state || -z $cap ]] && return
 
@@ -250,28 +261,38 @@ battery_f () {
 	to_json 'battery_f' "${cap}${suffix}"
 }
 
-ethernet_f () {
-	local interface='eno2'
-	local result state
+net_f () {
+	local dbm
+	local result=""
+	local state
 
-	state=$(< "/sys/class/net/${interface}/operstate")
-	[[ -z $state ]] && return
+	for interface in "${!net_interfaces[@]}"; do
+		state=$(slurp_file "/sys/class/net/${interface}/operstate")
+		[[ -z $state || $state != up ]] && continue
 
-	case $state in
-		'down')
-			result='E'
-			;;
-		'up')
-			speed=$(< "/sys/class/net/${interface}/speed")
-			[[ -z $speed ]] && return
-			result="E (${speed} MBit/s)"
-			;;
-		*)
-			result='error'
-			;;
-	esac
+		if [[ -n $result ]]; then
+			result+=" - "
+		fi
+		result+="${net_interfaces[$interface]}"
 
-	to_json 'ethernet_f' "$result"
+		dbm=$(sed -nE '/^\s*'"$interface"':/ { s/[^-]*-([0-9]*).*/\1/p;q }' \
+			/proc/net/wireless 2>/dev/null)
+		[[ -z $dbm ]] && continue
+
+		if ((dbm > 93)); then
+			result+=':0%'
+		elif ((dbm < 20)); then
+			result+=':100%'
+		else
+			result+=":$((100 - ((dbm - 20)**2) / 53))%"
+		fi
+	done
+
+	if [[ -z $result ]]; then
+		result="down"
+	fi
+
+	to_json 'net_f' "$result"
 }
 
 time_f () {
@@ -347,37 +368,6 @@ volume_mic_f () {
 	local button=$1
 
 	volume_intern "$button" 'volume_mic_f' 'Capture' '' ''
-}
-
-wifi_f () {
-	local button=$1
-	local interface='wlo1'
-	local dbm operstate result wifi wireless
-
-	operstate=$(< "/sys/class/net/${interface}/operstate")
-	[[ -z $operstate ]] && return
-
-	if [[ $operstate == 'down' ]]; then
-		to_json 'wifi_f' 'W down'
-	fi
-
-	wireless=$(< '/proc/net/wireless')
-	[[ -z $wireless ]] && return
-
-	dbm=$(printf '%s' "$wireless" | \
-		sed -nE '/^\s*'"${interface}"'/ { s/[^-]*-([0-9]*).*/\1/p;q }')
-	[[ -z $dbm ]] && return
-
-	if ((dbm > 93)); then
-		result='0%'
-	elif ((dbm < 20)); then
-		result='100%'
-	else
-		wifi=$((100 - ((dbm - 20)**2) / 53))
-		result="${wifi}%"
-	fi
-
-	to_json 'wifi_f' "$result"
 }
 
 
