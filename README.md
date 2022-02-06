@@ -1,10 +1,6 @@
 Some personal scripts that I need to share conveniently, but that are not
 necessarily intended or suitable for general use.
 
-`dwn.sh`
---------
-Convenient media download script using `youtube-dl`.
-
 `firefox-temporary-profile.sh`
 ------------------------------
 Start Firefox with a temporary profile (confined to

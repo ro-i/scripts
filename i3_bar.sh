@@ -13,9 +13,16 @@ colors=(
 	['yellow']='#ffac18'
 )
 
+declare -A json_additional_defaults
+json_additional_defaults=(
+	['color']='"'"${colors['default']}"'"'
+	['separator_block_width']=29
+)
+
 # Which lineitems shall be displayed, in which order, and which
 # function is responsible for them?
 line_items=(
+	'today_f'
 	'time_f'
 	'volume_f'
 	'volume_mic_f'
@@ -90,7 +97,8 @@ do_update () {
 }
 
 err () {
-	to_json 'err' 'error' "${colors['red']}"
+	local -A additional_json=(['color']='"'"${colors['red']}"'"')
+	to_json 'err' 'error' "additional_json"
 }
 
 # Executes an external command if it is available.
@@ -186,17 +194,30 @@ start_monitors () {
 	done
 }
 
-# Gets the name of a lineitem, its new value and optionally also its
-# new color and returns a corresponding json object.
+# Returns a json object for the given parameters.
+# Parameters:
+#     name                     the name of the lineitem
+#     full_text                its content
+#     additional_json          additional json items
+#                              ^ must be name (as string) of an associative array!
+#                              the values must already be quoted if needed
 to_json () {
-	local name=$1
-	local full_text=$2
-	local color=$3
+	local json_string='"name": "'"$1"'", "full_text": "'"$2"'"'
 
-	[[ -z $color ]] && color=${colors['default']}
+	if [[ -n $3 ]]; then
+		# Caution! Name must be different from reference!
+		# see https://stackoverflow.com/a/33777659
+		local -n additional_json_ref=$3
+		for key in "${!additional_json_ref[@]}"; do
+			json_additional_defaults["$key"]="${additional_json_ref["$key"]}"
+		done
+	fi
 
-	printf '{ "name": "%s", "full_text": "%s", "color": "%s", "separator_block_width": 29 }'\
-		"$name" "$full_text" "$color"
+	for key in "${!json_additional_defaults[@]}"; do
+		json_string+=', "'"$key"'": '"${json_additional_defaults["$key"]}"
+	done
+
+	printf '{%s}' "$json_string"
 }
 
 
@@ -304,6 +325,25 @@ time_f () {
 			;;
 		*)
 			to_json 'time_f' "$(date +'%H:%M - %d.%m')"
+			;;
+	esac
+}
+
+today_f () {
+	local button=$1
+
+	case $button in
+		3)
+			exec_cmd "$terminal_app" '-- bash -c "vi ~/today"' true
+			;;
+		*)
+			local -A additional_json=(
+				['align']='"center"'
+				['color']='"#656565"'
+				['separator']="false"
+				['separator_block_width']="55"
+			)
+			to_json 'today_f' ">> $(slurp_file ~/today) <<" "additional_json"
 			;;
 	esac
 }
