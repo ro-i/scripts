@@ -22,7 +22,7 @@ json_additional_defaults=(
 # Which lineitems shall be displayed, in which order, and which
 # function is responsible for them?
 line_items=(
-	'today_f'
+	'notes_f'
 	'time_f'
 	'volume_f'
 	'volume_mic_f'
@@ -168,6 +168,10 @@ print_line () {
 
 slurp_file () {
 	{ printf '%s' "$(< "$1")"; } 2>/dev/null
+}
+
+slurp_file_head () {
+	{ printf '%s' "$(head -n1 "$1")"; } 2>/dev/null
 }
 
 # A separate reader for stdin.
@@ -316,6 +320,25 @@ net_f () {
 	to_json 'net_f' "$result"
 }
 
+notes_f () {
+	local button=$1
+
+	case $button in
+		3)
+			exec_cmd "$terminal_app" '-- bash -c "nvim ~/notes"' true
+			;;
+		*)
+			local -A additional_json=(
+				['align']='"center"'
+				['color']='"#656565"'
+				['separator']="false"
+				['separator_block_width']="55"
+			)
+			to_json 'notes_f' ">> $(slurp_file_head ~/notes) <<" "additional_json"
+			;;
+	esac
+}
+
 time_f () {
 	local button=$1
 
@@ -325,25 +348,6 @@ time_f () {
 			;;
 		*)
 			to_json 'time_f' "$(date +'%H:%M - %d.%m')"
-			;;
-	esac
-}
-
-today_f () {
-	local button=$1
-
-	case $button in
-		3)
-			exec_cmd "$terminal_app" '-- bash -c "vi ~/today"' true
-			;;
-		*)
-			local -A additional_json=(
-				['align']='"center"'
-				['color']='"#656565"'
-				['separator']="false"
-				['separator_block_width']="55"
-			)
-			to_json 'today_f' ">> $(slurp_file ~/today) <<" "additional_json"
 			;;
 	esac
 }
