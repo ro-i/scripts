@@ -33,9 +33,9 @@ my @albums = (
 );
 
 # dmenu command
-my $dmenu_cmd = "dmenu -fn DejaVuSansMono-12 -i -l 25 -nb \'#162f54\' -nf "
-    . "\'#e2e2e2\' -sb \'#6574ff\' -sf \'#ffffff\'";
-#my $dmenu_cmd = "wofi --dmenu -s ~/.config/wofi/monospaced.css";
+#my $dmenu_cmd = "dmenu -fn DejaVuSansMono-12 -i -l 25 -nb \'#162f54\' -nf "
+#    . "\'#e2e2e2\' -sb \'#6574ff\' -sf \'#ffffff\'";
+my $dmenu_cmd = "wofi --dmenu -s ~/.config/wofi/monospaced.css";
 
 # player for albums ...
 my $player_album = "mpv";

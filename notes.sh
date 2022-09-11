@@ -18,7 +18,8 @@ die () {
 }
 
 dmenu_cmd () {
-	dmenu -fn DejaVuSansMono-12 -i -l 25  -nb '#162f54' -nf '#e2e2e2' -sb '#6574ff' -sf '#ffffff'
+	#dmenu -fn DejaVuSansMono-12 -i -l 25  -nb '#162f54' -nf '#e2e2e2' -sb '#6574ff' -sf '#ffffff'
+	wofi --dmenu -s ~/.config/wofi/monospaced.css
 }
 
 editor () {
