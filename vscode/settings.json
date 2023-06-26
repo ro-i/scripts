@@ -1,0 +1,51 @@
+{
+    "editor.fontFamily": "DejaVu Sans Mono",
+    "window.titleBarStyle": "custom",
+    "telemetry.telemetryLevel": "off",
+    "dotnetAcquisitionExtension.enableTelemetry": false,
+    "editor.fontSize": 15,
+    "editor.cursorBlinking": "solid",
+    "editor.minimap.enabled": false,
+    "terminal.integrated.defaultProfile.linux": "zsh",
+    "workbench.enableExperiments": false,
+    "workbench.settings.enableNaturalLanguageSearch": false,
+    "update.mode": "none",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "editor.inlayHints.enabled": "off",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.default.cppStandard": "c++20",
+    "editor.wordWrap": "on",
+    "vim.handleKeys": {
+        "<C-j>": false,
+        "<C-w>": false
+    },
+    "C_Cpp.default.compilerPath": "",
+    "C_Cpp.default.intelliSenseMode": "linux-clang-x64",
+    "C_Cpp.codeAnalysis.updateDelay": 500,
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.checkUpdates": true,
+    "cmake.configureOnOpen": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    // "vim.normalModeKeyBindings": [
+    //     {
+    //         "before": [
+    //             "g",
+    //             "b"
+    //         ],
+    //         "after": [
+    //             "<C-O>"
+    //         ]
+    //     },
+    //     {
+    //         "before": [
+    //             "g",
+    //             "f"
+    //         ],
+    //         "after": [
+    //             "<C-I>"
+    //         ]
+    //     },
+    // ]
+}
