@@ -3,8 +3,11 @@
 set -e
 
 
-install_dir_p="$(realpath 1)"
-install_dir="${install_dir_p:-$HOME/nvim}"
+if [ -n "$1" ]; then
+    install_dir="$(realpath "$1")"
+else
+    install_dir="$HOME/nvim"
+fi
 shell="${2:-zsh}"
 shell_file="$HOME/.${shell}rc"
 bin_dir="$HOME/.local/bin"
@@ -27,7 +30,7 @@ node_release="20"
 
 
 mkdir -p "$bin_dir"
-if ! echo $PATH | tr ':' '\n' | grep -qxF "$bin_dir"; then
+if ! echo "$PATH" | tr ':' '\n' | grep -qxF "$bin_dir"; then
     echo "WARN: ${bin_dir} is not part of ${PATH}!"
 fi
 
