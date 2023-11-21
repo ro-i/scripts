@@ -81,7 +81,7 @@ if ! grep -q NVM_DIR "$shell_file"; then
     echo 'export NVM_DIR="$HOME/.nvm"' >> "$shell_file"
     echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" --no-use  # This loads nvm' >> "$shell_file"
 fi
-"${shell}" -c ". ${shell_file} && nvm install ${node_release}"
+"${shell}" -c ". ${shell_file} && . ${NVM_DIR}/nvm.sh && nvm install ${node_release}"
 
 # Install neovim python module.
 pip3 install -U pynvim
