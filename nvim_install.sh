@@ -3,19 +3,20 @@
 set -e
 
 
-if [ -n "$1" ]; then
-    install_dir="$(realpath "$1")"
-else
-    install_dir="$HOME/nvim"
-fi
-shell="${2:-zsh}"
-shell_file="$HOME/.${shell}rc"
-bin_dir="$HOME/.local/bin"
+usage () {
+    echo "usage: $0 [-i INSTALL_DIR] [-s TARGET_SHELL]"
+}
 
-nvim_release="v0.9.4"
+
+install_dir="$HOME/nvim"
+shell="zsh"
+shell_file="$HOME/.${shell}rc"
+files_target_dir="$HOME/.local"
+
+nvim_release="nightly" # "v0.9.4"
 nvim_file="nvim-linux64.tar.gz"
 nvim_dir="${nvim_file%.tar.gz}"
-nvim_checksum="dbf4eae83647ca5c3ce1cd86939542a7b6ae49cd78884f3b4236f4f248e5d447"
+nvim_checksum_file="nvim-linux64.tar.gz.sha256sum"
 
 rg_release="13.0.0"
 rg_file="ripgrep-${rg_release}-x86_64-unknown-linux-musl.tar.gz"
@@ -29,9 +30,35 @@ nvm_url="https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh"
 node_release="20"
 
 
-mkdir -p "$bin_dir"
-if ! echo "$PATH" | tr ':' '\n' | grep -qxF "$bin_dir"; then
-    echo "WARN: ${bin_dir} is not part of ${PATH}!"
+while getopts "hi:s:" opt; do
+    case $opt in
+        h)
+            usage
+            exit 0
+            ;;
+        i)
+            install_dir="$(realpath "$OPTARG")"
+            ;;
+        s)
+            shell="$OPTARG"
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+
+# Create necessary distribution target directories in $HOME if they don't already exist.
+for directory in bin lib man share; do
+    mkdir -p "$files_target_dir/$directory"
+done
+# We also need the necessary subdirectory in man.
+mkdir -p "$files_target_dir/man/man1"
+
+if ! echo "$PATH" | tr ':' '\n' | grep -qxF "$files_target_dir/bin"; then
+    echo "WARN: $files_target_dir/bin is not part of ${PATH}!"
 fi
 
 mkdir -p "$install_dir"
@@ -40,7 +67,8 @@ cd "$install_dir"
 # Install nvim.
 # Download nvim file, overwriting potentially existing file.
 wget -qO "${nvim_file}" "https://github.com/neovim/neovim/releases/download/${nvim_release}/${nvim_file}"
-if [ "$(sha256sum "$nvim_file" | cut -d ' ' -f 1)" != "$nvim_checksum" ]; then
+wget -qO "${nvim_checksum_file}" "https://github.com/neovim/neovim/releases/download/${nvim_release}/${nvim_checksum_file}"
+if ! sha256sum -c "$nvim_checksum_file"; then
     echo "ERROR: checksum mismatch"
     exit 1
 fi
@@ -52,8 +80,13 @@ tar -xzf "$nvim_file"
 sed -i '/^alias vi=/d' "$shell_file"
 sed -i '/^alias vimdiff=/d' "$shell_file"
 # Insert new shell aliases.
-echo "alias vi='$install_dir/$nvim_dir/bin/nvim'" >> "$shell_file"
-echo "alias vimdiff='$install_dir/$nvim_dir/bin/nvim -d'" >> "$shell_file"
+echo "alias vi='nvim'" >> "$shell_file"
+echo "alias vimdiff='nvim -d'" >> "$shell_file"
+# Distribute files.
+for directory in bin lib man share; do
+    mkdir -p "$files_target_dir/$directory"
+    cp -a "$nvim_dir/$directory/"* "$files_target_dir/$directory/"
+done
 
 
 # Install ripgrep.
@@ -63,7 +96,8 @@ wget -qO "${rg_file}" "https://github.com/BurntSushi/ripgrep/releases/download/$
 rm -rf "$rg_dir"
 # Extract rg file to rg dir.
 tar -xzf "$rg_file"
-cp "$install_dir/$rg_dir/rg" "${bin_dir}"
+cp "$install_dir/$rg_dir/rg" "$files_target_dir/bin/"
+cp "$install_dir/$rg_dir/doc/rg.1" "$files_target_dir/man/man1/"
 
 # Install fd.
 # Download fg file, overwriting potentially existing file.
@@ -72,7 +106,8 @@ wget -qO "${fd_file}" "https://github.com/sharkdp/fd/releases/download/${fd_rele
 rm -rf "$fd_dir"
 # Extract fd file to fd dir.
 tar -xzf "$fd_file"
-cp "$install_dir/$fd_dir/fd" "${bin_dir}"
+cp "$install_dir/$fd_dir/fd" "$files_target_dir/bin/"
+cp "$install_dir/$fd_dir/fd.1" "$files_target_dir/man/man1/"
 
 # install npm/node (required for nvim LSP support).
 # The nvm script seems to require bash to be executed.
