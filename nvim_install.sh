@@ -41,6 +41,7 @@ while getopts "hi:s:" opt; do
             ;;
         s)
             shell="$OPTARG"
+            shell_file="$HOME/.${shell}rc"
             ;;
         *)
             usage
