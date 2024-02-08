@@ -84,7 +84,7 @@ sed -i '/^alias vimdiff=/d' "$shell_file"
 echo "alias vi='nvim'" >> "$shell_file"
 echo "alias vimdiff='nvim -d'" >> "$shell_file"
 # Distribute files.
-for directory in bin lib man share; do
+for directory in bin lib share; do
     mkdir -p "$files_target_dir/$directory"
     cp -a "$nvim_dir/$directory/"* "$files_target_dir/$directory/"
 done
