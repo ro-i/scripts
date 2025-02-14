@@ -258,6 +258,18 @@ gdb_nc () {
     gdb -nh -x ~/.gdbinit_alexis_engelke -ex ’set follow-fork-mode child’ -ex ’catch fork’ -ex ’catch exec’ -ex ’b main’ -ex 'r' --args nc -lp 1235 -e ./vuln
 }
 
+rcat () {
+    for file in "$@"; do
+        local rpath="$file"
+        if [ -d "$rpath" ]; then
+            find "$rpath" -type f -size +0 -exec grep -q . {} \; -exec echo "{}:" \; -exec cat {} \;
+        elif [ -f "$rpath" ] && grep -q . "$rpath"; then
+            echo "${file}:"
+            cat "$rpath"
+        fi
+    done
+}
+
 # enable auto-suggestions based on the history
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     . /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
@@ -283,8 +295,5 @@ autoload run-help
 HELPDIR=/usr/share/zsh/"${ZSH_VERSION}"/help
 alias help=run-help
 
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" --no-use  # This loads nvm
 alias vi='nvim'
 alias vimdiff='nvim -d'
