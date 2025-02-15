@@ -1,0 +1,18 @@
+# Exclude specific files
+
+-s /.config/Code/***
+-s /.config/coc/***
+-s /.config/chromium/***
+-s /.config/libvirt/***
+-s /dev/git/***
+
+# Include specific files
+
++ /.config/***
+
+# Exclude all other hidden files
+
+-s /.**
+
+# Include everything else
++ /**
