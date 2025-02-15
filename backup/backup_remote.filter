@@ -1,0 +1,5 @@
+.config/Code
+.config/coc
+.config/chromium
+.config/libvirt
+dev/git
