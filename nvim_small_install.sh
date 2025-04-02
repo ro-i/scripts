@@ -31,10 +31,20 @@ do
   vim.call('plug#begin')
   Plug('llvm/llvm.vim')
   Plug('folke/tokyonight.nvim')
+  Plug('akinsho/toggleterm.nvim')
   vim.call('plug#end')
 end
 
--- Color schemes should be loaded after plug#end().
+require("toggleterm").setup { open_mapping = '<C-j>', shell = 'bash' }
+function _G.set_terminal_keymaps()
+  local _opts = {}
+  vim.keymap.set('t', '<esc>', [[<C-\\><C-n>]], _opts)
+  vim.keymap.set('t', '<C-w>', [[<C-\\><C-n><C-w>]], _opts)
+end
+vim.cmd('autocmd! TermOpen term://* lua set_terminal_keymaps()')
+vim.cmd('autocmd BufEnter,BufWinEnter,WinEnter term://* startinsert')
+
+require('tokyonight').setup({ transparent = true, styles = { comments = { italic = false } } })
 vim.cmd('silent! colorscheme tokyonight-storm')
 EOF
 )
@@ -117,4 +127,4 @@ done
 # Install nvim config.
 nvim_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"/nvim
 mkdir -p "$nvim_config_dir"
-echo "$NVIMRC" > "$nvim_config_dir/test.lua"
+echo "$NVIMRC" > "$nvim_config_dir/init.lua"
