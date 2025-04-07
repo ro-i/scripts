@@ -3,10 +3,7 @@
 set -e
 
 NVIMRC=$(cat <<EOF
-vim.opt.number = true
 vim.opt.scrolloff = 5
-
-vim.opt.mouse = 'a'
 
 vim.opt.breakindent = true
 vim.opt.copyindent = true
@@ -17,6 +14,9 @@ vim.opt.ignorecase = true
 vim.opt.smartcase = true
 vim.opt.hlsearch = true
 vim.opt.inccommand = 'nosplit'
+
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
 
 vim.cmd [[
 let data_dir = stdpath('data') . '/site'
@@ -30,33 +30,19 @@ do
   local Plug = vim.fn['plug#']
   vim.call('plug#begin')
   Plug('llvm/llvm.vim')
-  Plug('folke/tokyonight.nvim')
-  Plug('akinsho/toggleterm.nvim')
+  Plug('nvim-lua/plenary.nvim') -- dependency for telescope
+  Plug('nvim-telescope/telescope.nvim', { ['branch'] = '0.1.x' })
   vim.call('plug#end')
+
+  local tb = require('telescope.builtin')
+  vim.keymap.set('n', '<leader>f', tb.find_files)
+  vim.keymap.set('n', '<leader><leader>', builtin.buffers)
 end
 
-require("toggleterm").setup { open_mapping = '<C-j>', shell = 'bash' }
-function _G.set_terminal_keymaps()
-  local _opts = {}
-  vim.keymap.set('t', '<esc>', [[<C-\\><C-n>]], _opts)
-  vim.keymap.set('t', '<C-w>', [[<C-\\><C-n><C-w>]], _opts)
-end
-vim.cmd('autocmd! TermOpen term://* lua set_terminal_keymaps()')
-vim.cmd('autocmd BufEnter,BufWinEnter,WinEnter term://* startinsert')
-
-require('tokyonight').setup({ transparent = true, styles = { comments = { italic = false } } })
-vim.cmd('silent! colorscheme tokyonight-storm')
+vim.cmd('colorscheme vim')
 EOF
 )
 
-usage () {
-    echo "usage: $0 [-i INSTALL_DIR] [-s TARGET_SHELL]"
-}
-
-
-install_dir="$HOME/nvim"
-shell="bash"
-shell_file="$HOME/.${shell}rc"
 files_target_dir="$HOME/.local"
 
 nvim_release="nightly" # "v0.9.4"
@@ -64,42 +50,21 @@ nvim_file="nvim-linux-x86_64.tar.gz"
 nvim_dir="${nvim_file%.tar.gz}"
 nvim_checksum_file="shasum.txt"
 
-while getopts "hi:s:" opt; do
+while getopts "c" opt; do
     case $opt in
-        h)
-            usage
-            exit 0
-            ;;
-        i)
-            install_dir="$(realpath "$OPTARG")"
-            ;;
-        s)
-            shell="$OPTARG"
-            shell_file="$HOME/.${shell}rc"
+        c)
+            install_nvimrc=1
             ;;
         *)
-            usage
             exit 1
             ;;
     esac
 done
 
-# Create necessary distribution target directories in $HOME if they don't already exist.
-for directory in bin lib man share; do
-    mkdir -p "$files_target_dir/$directory"
-done
-# We also need the necessary subdirectory in man.
-mkdir -p "$files_target_dir/man/man1"
-
 if ! echo "$PATH" | tr ':' '\n' | grep -qxF "$files_target_dir/bin"; then
     echo "WARN: $files_target_dir/bin is not part of ${PATH}!"
 fi
 
-mkdir -p "$install_dir"
-cd "$install_dir"
-
-# Install nvim.
-# Download nvim file, overwriting potentially existing file.
 echo "Retrieving ${nvim_file} ..."
 wget -qO "${nvim_file}" "https://github.com/neovim/neovim/releases/download/${nvim_release}/${nvim_file}"
 echo "Retrieving ${nvim_checksum_file} ..."
@@ -108,23 +73,19 @@ if ! grep "$nvim_file" "$nvim_checksum_file" | sha256sum -c; then
     echo "ERROR: checksum mismatch"
     exit 1
 fi
-# Remove potentially existing nvim dir.
-rm -rf "$nvim_dir"
 # Extract nvim file to nvim dir.
 tar -xzf "$nvim_file"
-# Remove old shell aliases.
-sed -i '/^alias vi=/d' "$shell_file"
-sed -i '/^alias vimdiff=/d' "$shell_file"
-# Insert new shell aliases.
-echo "alias vi='nvim'" >> "$shell_file"
-echo "alias vimdiff='nvim -d'" >> "$shell_file"
 # Distribute files.
 for directory in bin lib share; do
     mkdir -p "$files_target_dir/$directory"
     cp -a "$nvim_dir/$directory/"* "$files_target_dir/$directory/"
 done
+# Cleanup downloaded files.
+rm -r "$nvim_dir" "$nvim_file" "$nvim_checksum_file"
 
 # Install nvim config.
-nvim_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}"/nvim
-mkdir -p "$nvim_config_dir"
-echo "$NVIMRC" > "$nvim_config_dir/init.lua"
+if [[ -n $install_nvimrc ]]; then
+  nvim_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+  mkdir -p "$nvim_config_dir"
+  echo "$NVIMRC" > "$nvim_config_dir/init.lua"
+fi
