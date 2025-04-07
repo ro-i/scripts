@@ -1,10 +1,6 @@
 """"""""""""""""""
 " display settings
 """"""""""""""""""
-" Show @@@ in the last line if it is truncated.
-set display=truncate
-
-" wrap or nowrap
 set nowrap
 set linebreak
 
@@ -12,17 +8,13 @@ set linebreak
 " text scroll if you mouse-click near the start or end of the window.
 set scrolloff=5
 
-if $COLORTERM == 'truecolor' && has('termguicolors')
-    set termguicolors
-endif
-
 if &diff
-    colorscheme ron
+  colorscheme ron
+elseif has('nvim')
+  colorscheme vim
+else
+  colorscheme default
 endif
-""""""""""""""""""""""
-" display settings end
-""""""""""""""""""""""
-
 
 """"""""""""""""""""""
 " indentation settings
@@ -30,10 +22,6 @@ endif
 set copyindent
 set expandtab
 set shiftwidth=2
-""""""""""""""""""""""""""
-" indentation settings end
-""""""""""""""""""""""""""
-
 
 """""""""""""""""""
 " keyboard settings
@@ -44,12 +32,10 @@ if has('mouse')
     set mouse=a
 endif
 
-noremap <Tab> :buffers<CR>:buffer<Space>
-noremap <S-E> :Explore .<CR>
-"""""""""""""""""""""""
-" keyboard settings end
-"""""""""""""""""""""""
-
+let g:mapleader = ' '
+let g:maplocalleader = ' '
+noremap <Leader><Leader> :Buffers<CR>
+noremap <Leader>f :Files<CR>
 
 """""""""""""""
 " misc settings
@@ -57,11 +43,10 @@ noremap <S-E> :Explore .<CR>
 " incrementally show the pattern for %s/pattern/substitute/
 set incsearch
 
-autocmd FileType modula2 setlocal spell spelllang=en_us
-"""""""""""""""""""
-" misc settings end
-"""""""""""""""""""
+set clipboard=unnamedplus
 
+autocmd BufRead,BufNewFile *.md setlocal spell
+autocmd FileType gitcommit setlocal spell
 
 """""""""""""""""
 " search settings
@@ -69,18 +54,11 @@ autocmd FileType modula2 setlocal spell spelllang=en_us
 set ignorecase
 set smartcase
 set hlsearch
-"""""""""""""""""""""
-" search settings end
-"""""""""""""""""""""
-
 
 """""""""""""""""
 " syntax settings
 """""""""""""""""
 set showmatch
-"""""""""""""""""""""
-" syntax settings end
-"""""""""""""""""""""
 
 """"""""""
 " commands
@@ -101,19 +79,29 @@ augroup END
 " Put these in an autocmd group, so that you can revert them with:
 " ":augroup vimStartup | au! | augroup END"
 augroup vimStartup
-    au!
-
-    " When editing a file, always jump to the last known cursor position.
-    " Don't do it when the position is invalid, when inside an event handler
-    " (happens when dropping a file on gvim) and for a commit message (it's
-    " likely a different one than last time).
-    autocmd BufReadPost *
-                \ if line("'\"") >= 1 && line("'\"") <= line("$") && &ft !~# 'commit'
-                \ |   exe "normal! g`\""
-                \ | endif
-
+  au!
+  " When editing a file, always jump to the last known cursor position.
+  " Don't do it when the position is invalid, when inside an event handler
+  " (happens when dropping a file on gvim) and for a commit message (it's
+  " likely a different one than last time).
+  autocmd BufReadPost *
+    \ if line("'\"") >= 1 && line("'\"") <= line("$") && &ft !~# 'commit'
+    \ |   exe "normal! g`\""
+    \ | endif
 augroup END
-""""""""""""""
-" commands end
-""""""""""""""
+
+"""""""""
+" plugins
+"""""""""
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+  silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
+call plug#begin()
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+Plug 'llvm/llvm.vim'
+call plug#end()
 
